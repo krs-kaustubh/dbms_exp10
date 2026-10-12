@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SAMs Portal{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0b1329; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+        .navbar { background-color: #172554; border-bottom: 2px solid #1e3a8a; }
+        .card { background-color: #1e293b; border: 1px solid #334155; color: #f8fafc; }
+        .table { color: #f8fafc; }
+        .table-dark { background-color: #1e293b; }
+        .form-control, .form-select { background-color: #0f172a; border: 1px solid #475569; color: #f8fafc; }
+        .form-control:focus, .form-select:focus { background-color: #0f172a; color: #f8fafc; border-color: #38bdf8; box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.25); }
+        .badge-approved, .badge-confirmed { background-color: #15803d; }
+        .badge-pending { background-color: #b45309; }
+        .badge-rejected, .badge-cancelled { background-color: #b91c1c; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4 px-3 sticky-top shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold text-info" href="/">🏢 SAMs Platform</a>
+            
+            <div class="navbar-nav me-auto">
+                <a class="nav-link {% if session.get('role') == 'manager' %}active text-info fw-bold{% else %}text-light{% endif %}" href="/manager">👨‍💼 Manager</a>
+                <a class="nav-link {% if session.get('role') == 'resident' %}active text-info fw-bold{% else %}text-light{% endif %}" href="/resident">🏠 Resident</a>
+                <a class="nav-link {% if session.get('role') == 'staff' %}active text-info fw-bold{% else %}text-light{% endif %}" href="/staff">🛠️ Staff</a>
+                <a class="nav-link text-warning" href="/register">📝 New Resident Signup</a>
+            </div>
+
+            <!-- Role Indicator & Quick Switcher -->
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary text-uppercase me-3 px-3 py-2">Active Role: {{ session.get('role') }}</span>
+                <form action="/switch-role" method="POST" class="d-inline">
+                    <input type="hidden" name="role" value="manager">
+                    <button type="submit" class="btn btn-sm btn-outline-light me-1">Manager View</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ msg }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

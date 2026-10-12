@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Resident Portal - SAMs{% endblock %}
+
+{% block content %}
+<!-- Resident Header & Switcher Bar -->
+<div class="card p-3 mb-4 border-primary">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <h4 class="text-info mb-1">🏠 Resident Portal</h4>
+            <p class="mb-0 text-muted">
+                Logged in as: <strong>{{ resident.name if resident else 'Unknown' }}</strong> 
+                (Apt: {{ resident.apartment_no if resident else '-' }}, ID: {{ resident.resident_id if resident else '-' }})
+                &nbsp;|&nbsp; Status: 
+                {% if resident and resident.status == 'Approved' %}
+                    <span class="badge badge-approved">Approved</span>
+                {% elif resident and resident.status == 'Pending' %}
+                    <span class="badge badge-pending">Pending Approval</span>
+                {% else %}
+                    <span class="badge badge-rejected">{{ resident.status if resident else 'N/A' }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-5 text-end">
+            <form action="/switch-role" method="POST" class="d-inline-flex align-items-center">
+                <input type="hidden" name="role" value="resident">
+                <label class="me-2 text-secondary small text-nowrap">Switch Resident:</label>
+                <select name="resident_id" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                    {% for r in all_residents %}
+                        <option value="{{ r.resident_id }}" {% if resident and r.resident_id == resident.resident_id %}selected{% endif %}>
+                            {{ r.name }} ({{ r.status }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if resident and resident.status == 'Pending' %}
+<div class="alert alert-warning">
+    <strong>⚠️ Account Pending Approval:</strong> Your registration has been received. The Society Manager must approve your application before you can book amenities.
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <!-- 1. Request Existing Amenity Booking -->
+    <div class="col-lg-6">
+        <div class="card p-4 shadow h-100 border-info">
+            <h4 class="text-info mb-2">📅 Book an Amenity</h4>
+            <p class="text-muted small mb-3">Reserve a time slot for any available society amenity.</p>
+            {% if resident and resident.status == 'Approved' %}
+            <form action="/resident/request-booking" method="POST">
+                <input type="hidden" name="resident_id" value="{{ resident.resident_id if resident else '' }}">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Select Amenity</label>
+                    <select class="form-select" name="amenity_id" required>
+                        <option value="">-- Choose Amenity --</option>
+                        {% for a in amenities %}
+                            <option value="{{ a.amenity_id }}">{{ a.name }} ({{ a.location }} • Max {{ a.capacity }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Date</label>
+                        <input type="date" class="form-control" name="booking_date" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Time Slot</label>
+                        <input type="text" class="form-control" name="time_slot" placeholder="e.g. 18:00-19:00" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-info text-dark fw-bold w-100">Send Booking Request</button>
+            </form>
+            {% else %}
+            <p class="text-muted text-center my-auto py-5">
+                Booking disabled until resident status is <strong>Approved</strong> by Manager.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 2. Ask / Propose a NEW Amenity to Society -->
+    <div class="col-lg-6">
+        <div class="card p-4 shadow h-100 border-success">
+            <h4 class="text-success mb-2">💡 Propose / Ask for New Amenity</h4>
+            <p class="text-muted small mb-3">Want an amenity not yet in the society? (e.g. Squash Court, Library, Yoga Deck). Submit a proposal to the Manager!</p>
+            <form action="/resident/propose-amenity" method="POST">
+                <input type="hidden" name="resident_id" value="{{ resident.resident_id if resident else '' }}">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-7">
+                        <label class="form-label text-secondary small">Amenity Name</label>
+                        <input type="text" class="form-control" name="amenity_name" placeholder="e.g. Rooftop Observatory" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label text-secondary small">Amenity Type</label>
+                        <select class="form-select" name="suggested_type" required>
+                            <option value="Sports_Court">Sports Court</option>
+                            <option value="Community_Hall">Community Hall</option>
+                            <option value="Gym">Fitness / Gym</option>
+                            <option value="Pool">Pool / Water</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Reason / Community Benefit</label>
+                    <textarea class="form-control" name="reason" rows="2" placeholder="Explain why residents would like this facility..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success text-dark fw-bold w-100">Submit Proposal to Manager</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- My Bookings List -->
+    <div class="col-lg-7">
+        <div class="card p-4 shadow h-100">
+            <h4 class="text-info mb-3">📋 My Booking History ({{ my_bookings|length }})</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary">
+                            <th>ID</th><th>Amenity</th><th>Date</th><th>Slot</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in my_bookings %}
+                        <tr>
+                            <td>{{ b.booking_id }}</td>
+                            <td class="fw-semibold">{{ b.amenity_name }}</td>
+                            <td>{{ b.booking_date }}</td>
+                            <td>{{ b.time_slot }}</td>
+                            <td>
+                                {% if b.status == 'Confirmed' %}
+                                    <span class="badge badge-confirmed">Confirmed</span>
+                                {% elif b.status == 'Pending' %}
+                                    <span class="badge badge-pending">Pending Approval</span>
+                                {% else %}
+                                    <span class="badge badge-cancelled">{{ b.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">You have no booking requests yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Amenity Proposals -->
+    <div class="col-lg-5">
+        <div class="card p-4 shadow h-100">
+            <h4 class="text-success mb-3">💡 My Proposed Amenities</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary"><th>Amenity</th><th>Type</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in my_proposals %}
+                        <tr>
+                            <td class="fw-semibold">{{ p.amenity_name }}</td>
+                            <td><span class="badge bg-secondary">{{ p.suggested_type }}</span></td>
+                            <td>
+                                {% if p.status == 'Approved' %}
+                                    <span class="badge badge-approved">Approved</span>
+                                {% elif p.status == 'Pending' %}
+                                    <span class="badge badge-pending">Under Review</span>
+                                {% else %}
+                                    <span class="badge badge-rejected">{{ p.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">No amenities proposed yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Entry Visits History -->
+<div class="card p-4 shadow">
+    <h4 class="text-info mb-3">🚪 My Amenity Visits</h4>
+    <div class="table-responsive">
+        <table class="table table-dark table-sm align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>Amenity</th><th>Entry Time</th><th>Exit Time</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in my_entries %}
+                <tr>
+                    <td class="fw-semibold">{{ e.amenity_name }}</td>
+                    <td>{{ e.entry_time.strftime('%Y-%m-%d %H:%M:%S') if e.entry_time else '-' }}</td>
+                    <td>{{ e.exit_time.strftime('%Y-%m-%d %H:%M:%S') if e.exit_time else '-' }}</td>
+                    <td>
+                        {% if e.exit_time %}
+                            <span class="badge bg-secondary">Completed</span>
+                        {% else %}
+                            <span class="badge bg-success">Currently Inside</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-muted py-3">No entry visits recorded yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

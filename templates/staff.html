@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Staff Console - SAMs{% endblock %}
+
+{% block content %}
+<!-- Staff Header & Switcher -->
+<div class="card p-3 mb-4 border-warning">
+    <div class="row align-items-center">
+        <div class="col-md-7">
+            <h4 class="text-warning mb-1">🛠️ Staff Operations Console</h4>
+            <p class="mb-0 text-muted">
+                Logged in: <strong>{{ staff.name }}</strong> (ID: {{ staff.staff_id }}) 
+                &nbsp;|&nbsp; Role: <span class="badge bg-secondary">{{ staff.staff_type }}</span>
+                &nbsp;|&nbsp; Assigned: <strong class="text-info">{{ staff.amenity_name }}</strong> ({{ staff.location }})
+            </p>
+        </div>
+        <div class="col-md-5 text-end">
+            <form action="/switch-role" method="POST" class="d-inline-flex align-items-center">
+                <input type="hidden" name="role" value="staff">
+                <label class="me-2 text-secondary small text-nowrap">Switch Staff:</label>
+                <select name="staff_id" class="form-select form-select-sm me-2" onchange="this.form.submit()">
+                    {% for s in all_staff %}
+                        <option value="{{ s.staff_id }}" {% if s.staff_id == staff.staff_id %}selected{% endif %}>
+                            {{ s.name }} ({{ s.amenity_name }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Check-In Resident Form -->
+    <div class="col-lg-4">
+        <div class="card p-4 shadow h-100 border-success">
+            <h5 class="text-success mb-3">🚪 Check-In Resident</h5>
+            <p class="text-muted small">Record entry for an approved resident visiting <strong>{{ staff.amenity_name }}</strong>.</p>
+            <form action="/staff/checkin" method="POST">
+                <input type="hidden" name="amenity_id" value="{{ staff.amenity_id }}">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Select Resident</label>
+                    <select class="form-select" name="resident_id" required>
+                        <option value="">-- Choose Resident --</option>
+                        {% for r in approved_residents %}
+                            <option value="{{ r.resident_id }}">{{ r.name }} ({{ r.apartment_no }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success text-dark fw-bold w-100">Log Entry (Now)</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Residents Inside (With Checkout button) -->
+    <div class="col-lg-8">
+        <div class="card p-4 shadow h-100">
+            <h5 class="text-warning mb-3">🟢 Currently Inside {{ staff.amenity_name }} ({{ active_entries|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary">
+                            <th>Resident</th><th>Apartment</th><th>Check-in Time</th><th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in active_entries %}
+                        <tr>
+                            <td class="fw-semibold">{{ e.resident_name }}</td>
+                            <td>{{ e.apartment_no }}</td>
+                            <td>{{ e.entry_time.strftime('%H:%M:%S') }}</td>
+                            <td class="text-end">
+                                <form action="/staff/checkout" method="POST" class="d-inline">
+                                    <input type="hidden" name="resident_id" value="{{ e.resident_id }}">
+                                    <input type="hidden" name="entry_time" value="{{ e.entry_time }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Log Exit</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="4" class="text-center text-muted py-4">No residents currently checked in.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scheduled Bookings for this amenity -->
+<div class="card p-4 shadow">
+    <h5 class="text-info mb-3">📅 Upcoming Bookings for {{ staff.amenity_name }}</h5>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover table-sm align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>Booking ID</th><th>Resident</th><th>Apartment</th><th>Contact</th><th>Date</th><th>Slot</th><th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in assigned_bookings %}
+                <tr>
+                    <td>{{ b.booking_id }}</td>
+                    <td class="fw-semibold">{{ b.resident_name }}</td>
+                    <td>{{ b.apartment_no }}</td>
+                    <td>{{ b.contact_no }}</td>
+                    <td>{{ b.booking_date }}</td>
+                    <td>{{ b.time_slot }}</td>
+                    <td>
+                        {% if b.status == 'Confirmed' %}
+                            <span class="badge badge-confirmed">Confirmed</span>
+                        {% elif b.status == 'Pending' %}
+                            <span class="badge badge-pending">Pending</span>
+                        {% else %}
+                            <span class="badge badge-cancelled">{{ b.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No bookings scheduled for this amenity.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

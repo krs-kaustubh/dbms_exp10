@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Bookings - SAMs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Bookings Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="card p-3 shadow-sm">
+            <h4 class="mb-3 text-info">Amenity Bookings ({{ bookings|length }})</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr class="text-secondary border-secondary">
+                            <th>ID</th>
+                            <th>Resident</th>
+                            <th>Amenity</th>
+                            <th>Date</th>
+                            <th>Time Slot</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in bookings %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ b.booking_id }}</span></td>
+                            <td class="fw-semibold">{{ b.resident_name }}</td>
+                            <td><span class="badge bg-primary">{{ b.amenity_name }}</span></td>
+                            <td><small>{{ b.booking_date }}</small></td>
+                            <td><small>{{ b.time_slot }}</small></td>
+                            <td>
+                                {% if b.status == 'Confirmed' %}
+                                    <span class="badge badge-confirmed">Confirmed</span>
+                                {% elif b.status == 'Pending' %}
+                                    <span class="badge badge-pending">Pending</span>
+                                {% else %}
+                                    <span class="badge badge-cancelled">{{ b.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <!-- Change status quick dropdown -->
+                                <form action="/bookings/status/{{ b.booking_id }}" method="POST" class="d-inline">
+                                    <select name="status" class="form-select form-select-sm d-inline w-auto me-1" onchange="this.form.submit()">
+                                        <option value="Confirmed" {% if b.status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+                                        <option value="Pending" {% if b.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option value="Cancelled" {% if b.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                                        <option value="Completed" {% if b.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                </form>
+                                <form action="/bookings/delete/{{ b.booking_id }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this booking?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">✕</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No bookings found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Booking Form -->
+    <div class="col-lg-4">
+        <div class="card p-4 shadow-sm border-info">
+            <h4 class="text-info mb-3">📅 New Booking</h4>
+            <form action="/bookings/add" method="POST">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Booking ID</label>
+                    <input type="number" class="form-control" name="booking_id" placeholder="e.g. 507" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Resident</label>
+                    <select class="form-select" name="resident_id" required>
+                        <option value="">-- Choose Resident --</option>
+                        {% for r in residents %}
+                            <option value="{{ r.resident_id }}">{{ r.name }} (ID: {{ r.resident_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Amenity</label>
+                    <select class="form-select" name="amenity_id" required>
+                        <option value="">-- Choose Amenity --</option>
+                        {% for a in amenities %}
+                            <option value="{{ a.amenity_id }}">{{ a.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Booking Date</label>
+                    <input type="date" class="form-control" name="booking_date" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Time Slot</label>
+                    <input type="text" class="form-control" name="time_slot" placeholder="e.g. 18:00-19:00" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Initial Status</label>
+                    <select class="form-select" name="status">
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-info w-100 fw-semibold text-dark">Reserve Slot</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

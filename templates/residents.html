@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Residents - SAMs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Residents Table -->
+    <div class="col-lg-8 mb-4">
+        <div class="card p-3 shadow-sm">
+            <h4 class="mb-3 text-info">Registered Residents ({{ residents|length }})</h4>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle">
+                    <thead>
+                        <tr class="text-secondary border-secondary">
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Apartment</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in residents %}
+                        <tr>
+                            <td><span class="badge bg-secondary">{{ r.resident_id }}</span></td>
+                            <td class="fw-semibold">{{ r.name }}</td>
+                            <td>{{ r.apartment_no }}</td>
+                            <td>{{ r.contact_no }}</td>
+                            <td><small class="text-muted">{{ r.email }}</small></td>
+                            <td class="text-end">
+                                <a href="/residents/edit/{{ r.resident_id }}" class="btn btn-sm btn-outline-warning me-1">Edit</a>
+                                <form action="/residents/delete/{{ r.resident_id }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this resident? This will cascade-delete bookings!');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">No residents found. Add one using the form.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Resident Form -->
+    <div class="col-lg-4">
+        <div class="card p-4 shadow-sm border-info">
+            <h4 class="text-info mb-3">➕ Add Resident</h4>
+            <form action="/residents/add" method="POST">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Resident ID</label>
+                    <input type="number" class="form-control" name="resident_id" placeholder="e.g. 107" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Full Name</label>
+                    <input type="text" class="form-control" name="name" placeholder="e.g. John Doe" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Apartment Number</label>
+                    <input type="text" class="form-control" name="apartment_no" placeholder="e.g. B-402" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Contact Number (10+ digits)</label>
+                    <input type="text" class="form-control" name="contact_no" placeholder="e.g. 9876543210" minlength="10" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Email</label>
+                    <input type="email" class="form-control" name="email" placeholder="e.g. john@email.com" required>
+                </div>
+                <button type="submit" class="btn btn-info w-100 fw-semibold text-dark">Save Resident</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

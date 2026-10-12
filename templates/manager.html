@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% block title %}Manager Dashboard - SAMs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>👨‍💼 Society Manager Dashboard</h2>
+    <span class="badge bg-danger fs-6 px-3 py-2">Universal Access</span>
+</div>
+
+<!-- Metrics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card p-3 border-info">
+            <h6 class="text-secondary small">TOTAL RESIDENTS</h6>
+            <h2 class="text-info mb-0">{{ total_res }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-warning">
+            <h6 class="text-secondary small">RESIDENT REGISTRATIONS</h6>
+            <h2 class="text-warning mb-0">{{ pending_res_count }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-danger">
+            <h6 class="text-secondary small">BOOKING REQUESTS</h6>
+            <h2 class="text-danger mb-0">{{ pending_bk_count }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 border-success">
+            <h6 class="text-secondary small">AMENITY PROPOSALS</h6>
+            <h2 class="text-success mb-0">{{ pending_prop_count }}</h2>
+        </div>
+    </div>
+</div>
+
+<!-- 1. PENDING RESIDENT REGISTRATIONS -->
+<div class="card p-3 mb-4 shadow border-warning">
+    <h4 class="text-warning mb-3">⏳ Pending Resident Registrations ({{ pending_residents|length }})</h4>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>ID</th><th>Name</th><th>Apartment</th><th>Contact</th><th>Email</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in pending_residents %}
+                <tr>
+                    <td><span class="badge bg-secondary">{{ r.resident_id }}</span></td>
+                    <td class="fw-semibold">{{ r.name }}</td>
+                    <td>{{ r.apartment_no }}</td>
+                    <td>{{ r.contact_no }}</td>
+                    <td>{{ r.email }}</td>
+                    <td>
+                        <form action="/manager/resident/{{ r.resident_id }}/approve" method="POST" class="d-inline">
+                            <button class="btn btn-sm btn-success me-1">✓ Approve</button>
+                        </form>
+                        <form action="/manager/resident/{{ r.resident_id }}/reject" method="POST" class="d-inline">
+                            <button class="btn btn-sm btn-danger">✕ Reject</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-3">No resident registrations pending approval.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 1b. ALL RESIDENTS (CRUD: Read / Update / Delete) -->
+<div class="card p-3 mb-4 shadow border-info">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="text-info mb-0">👥 All Residents ({{ all_residents|length if all_residents else 0 }})</h4>
+        <a href="/register" class="btn btn-sm btn-info text-dark fw-semibold">➕ Add Resident</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>ID</th><th>Name</th><th>Apartment</th><th>Contact</th><th>Email</th><th>Status</th><th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in all_residents %}
+                <tr>
+                    <td><span class="badge bg-secondary">{{ r.resident_id }}</span></td>
+                    <td class="fw-semibold">{{ r.name }}</td>
+                    <td>{{ r.apartment_no }}</td>
+                    <td>{{ r.contact_no }}</td>
+                    <td><small>{{ r.email }}</small></td>
+                    <td>
+                        {% if r.status == 'Approved' %}<span class="badge badge-approved">Approved</span>
+                        {% elif r.status == 'Pending' %}<span class="badge badge-pending">Pending</span>
+                        {% else %}<span class="badge badge-rejected">{{ r.status }}</span>{% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="/residents/edit/{{ r.resident_id }}" class="btn btn-sm btn-outline-warning me-1">Edit</a>
+                        <form action="/residents/delete/{{ r.resident_id }}" method="POST" class="d-inline" onsubmit="return confirm('Delete resident {{ r.resident_id }}? Their bookings and logs will be cascade-deleted.');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-muted py-3">No residents found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 2. AMENITY PROPOSALS FROM RESIDENTS -->
+<div class="card p-3 mb-4 shadow border-success">
+    <h4 class="text-success mb-3">💡 Amenity Requests & Proposals from Residents</h4>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>Requested Amenity</th><th>Suggested Type</th><th>Proposed By</th><th>Reason</th><th>Status</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in proposals %}
+                <tr>
+                    <td class="fw-semibold text-info">{{ p.amenity_name }}</td>
+                    <td><span class="badge bg-secondary">{{ p.suggested_type }}</span></td>
+                    <td>{{ p.resident_name }} ({{ p.apartment_no }})</td>
+                    <td><small>{{ p.reason or '-' }}</small></td>
+                    <td>
+                        {% if p.status == 'Approved' %}
+                            <span class="badge badge-approved">Approved & Created</span>
+                        {% elif p.status == 'Pending' %}
+                            <span class="badge badge-pending">Pending Review</span>
+                        {% else %}
+                            <span class="badge badge-rejected">{{ p.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.status == 'Pending' %}
+                            <form action="/manager/proposal/{{ p.proposal_id }}/approve" method="POST" class="d-inline">
+                                <button class="btn btn-sm btn-success me-1">✓ Approve & Build</button>
+                            </form>
+                            <form action="/manager/proposal/{{ p.proposal_id }}/reject" method="POST" class="d-inline">
+                                <button class="btn btn-sm btn-danger">✕ Reject</button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted small">Processed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-3">No amenity proposals submitted yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 3. PENDING BOOKING REQUESTS -->
+<div class="card p-3 mb-4 shadow border-info">
+    <h4 class="text-info mb-3">📅 Amenity Bookings & Approvals</h4>
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+                <tr class="text-secondary">
+                    <th>ID</th><th>Resident</th><th>Amenity</th><th>Date</th><th>Slot</th><th>Status</th><th>Review</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in bookings %}
+                <tr>
+                    <td><span class="badge bg-secondary">{{ b.booking_id }}</span></td>
+                    <td class="fw-semibold">{{ b.resident_name }}</td>
+                    <td><span class="badge bg-primary">{{ b.amenity_name }}</span></td>
+                    <td>{{ b.booking_date }}</td>
+                    <td>{{ b.time_slot }}</td>
+                    <td>
+                        {% if b.status == 'Confirmed' %}
+                            <span class="badge badge-confirmed">Confirmed</span>
+                        {% elif b.status == 'Pending' %}
+                            <span class="badge badge-pending">Pending</span>
+                        {% else %}
+                            <span class="badge badge-rejected">{{ b.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if b.status == 'Pending' %}
+                            <form action="/manager/booking/{{ b.booking_id }}/approve" method="POST" class="d-inline">
+                                <button class="btn btn-sm btn-success me-1">Accept</button>
+                            </form>
+                            <form action="/manager/booking/{{ b.booking_id }}/reject" method="POST" class="d-inline">
+                                <button class="btn btn-sm btn-danger">Reject</button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted small">Reviewed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 4. ONBOARDING CONTROLS: HIRE STAFF & ADD AMENITY -->
+<div class="row g-4 mb-4">
+    <!-- Hire Staff Form -->
+    <div class="col-lg-6">
+        <div class="card p-4 shadow h-100 border-primary">
+            <h5 class="text-primary mb-3">➕ Hire & Assign New Staff</h5>
+            <form action="/manager/staff/add" method="POST">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Staff Name</label>
+                        <input type="text" class="form-control" name="name" placeholder="e.g. Ramesh Sharma" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Contact (10+ digits)</label>
+                        <input type="text" class="form-control" name="contact_no" placeholder="9812345678" minlength="10" required>
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Monthly Salary (₹)</label>
+                        <input type="number" step="0.01" class="form-control" name="salary" placeholder="35000" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Shift Timing</label>
+                        <input type="text" class="form-control" name="shift_timing" placeholder="08:00-16:00" required>
+                    </div>
+                </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Staff Type</label>
+                        <select class="form-select" name="staff_type" required>
+                            <option value="Trainer">Trainer</option>
+                            <option value="Support_Staff">Support Staff</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Assigned Amenity</label>
+                        <select class="form-select" name="amenity_id" required>
+                            {% for a in amenities %}
+                                <option value="{{ a.amenity_id }}">{{ a.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Specialization / Designation</label>
+                    <input type="text" class="form-control" name="sub_info" placeholder="e.g. Pilates Trainer / Life Guard" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 fw-bold">Hire & Assign Staff</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Amenity Form -->
+    <div class="col-lg-6">
+        <div class="card p-4 shadow h-100 border-info">
+            <h5 class="text-info mb-3">➕ Create / Add New Amenity</h5>
+            <form action="/manager/amenity/add" method="POST">
+                <div class="row g-2 mb-2">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Amenity Name</label>
+                        <input type="text" class="form-control" name="name" placeholder="e.g. Table Tennis Room" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Amenity Type</label>
+                        <select class="form-select" name="amenity_type" required>
+                            <option value="Sports_Court">Sports Court</option>
+                            <option value="Gym">Gym</option>
+                            <option value="Pool">Pool</option>
+                            <option value="Community_Hall">Community Hall</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label text-secondary small">Location</label>
+                    <input type="text" class="form-control" name="location" placeholder="e.g. Sports Complex 2nd Floor" required>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Operating Hours</label>
+                        <input type="text" class="form-control" name="operating_hours" placeholder="06:00-22:00" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary small">Capacity</label>
+                        <input type="number" class="form-control" name="capacity" min="1" placeholder="25" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-info text-dark w-100 fw-bold">Establish Amenity</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 5. AMENITIES & STAFF OVERVIEW TABLES -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card p-3 shadow h-100">
+            <h5 class="text-info mb-3">🏊 Society Amenities ({{ amenities|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary"><th>ID</th><th>Name</th><th>Type</th><th>Location</th><th>Capacity</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for a in amenities %}
+                        <tr>
+                            <td>{{ a.amenity_id }}</td>
+                            <td class="fw-semibold">{{ a.name }}</td>
+                            <td><span class="badge bg-info text-dark">{{ a.amenity_type }}</span></td>
+                            <td><small>{{ a.location }}</small></td>
+                            <td>{{ a.capacity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card p-3 shadow h-100">
+            <h5 class="text-info mb-3">🛠️ Active Staff ({{ staff_members|length }})</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm align-middle mb-0">
+                    <thead>
+                        <tr class="text-secondary"><th>ID</th><th>Name</th><th>Type</th><th>Salary</th><th>Assigned Amenity</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for s in staff_members %}
+                        <tr>
+                            <td>{{ s.staff_id }}</td>
+                            <td class="fw-semibold">{{ s.name }}</td>
+                            <td><span class="badge bg-secondary">{{ s.staff_type }}</span></td>
+                            <td>₹{{ s.salary }}</td>
+                            <td><span class="badge bg-primary">{{ s.amenity_name }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
