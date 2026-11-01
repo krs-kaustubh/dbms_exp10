@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Edit resident{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <div class="page-head"><div><h1>Edit resident</h1><p class="muted">ID {{ resident.resident_id }}</p></div></div>
+  <div class="card">
+    <form method="post" action="/residents/edit/{{ resident.resident_id }}">
+      <div class="field"><label>Full name</label><input name="name" value="{{ resident.name }}" required></div>
+      <div class="row">
+        <div class="field"><label>Apartment</label><input name="apartment_no" value="{{ resident.apartment_no }}" required></div>
+        <div class="field"><label>Contact (10+ digits)</label><input name="contact_no" minlength="10" value="{{ resident.contact_no }}" required></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" name="email" value="{{ resident.email }}" required></div>
+      <div class="actions" style="justify-content:space-between">
+        <a class="btn ghost" href="/manager#residents">Cancel</a>
+        <button class="btn">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% macro pill(status) -%}
+  {%- set cls = {'Approved':'ok','Confirmed':'ok','Completed':'neutral','Pending':'warn','Rejected':'bad','Cancelled':'bad'}.get(status, 'neutral') -%}
+  <span class="pill {{ cls }}">{{ status }}</span>
+{%- endmacro %}
+
+{% macro fmt(dt) -%}{{ dt.strftime('%d %b %Y, %H:%M') if dt else '-' }}{%- endmacro %}
+
+{% macro initials(name) -%}{{ (name or '?')[:1]|upper }}{%- endmacro %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill, fmt, initials %}
+{% block title %}Resident{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="who">
+    <div class="avatar">{{ initials(resident.name if resident else None) }}</div>
+    <div>
+      <h1>{{ resident.name if resident else 'No resident selected' }}</h1>
+      {% if resident %}<p class="muted">Apartment {{ resident.apartment_no }} · ID {{ resident.resident_id }} · {{ pill(resident.status) }}</p>{% endif %}
+    </div>
+  </div>
+  <form method="post" action="/switch-role" class="inline">
+    <input type="hidden" name="role" value="resident">
+    <label for="who">Switch resident (demo)</label>
+    <select id="who" name="resident_id" class="compact" data-autosubmit>
+      {% for r in all_residents %}<option value="{{ r.resident_id }}" {{ 'selected' if resident and r.resident_id == resident.resident_id }}>{{ r.name }} ({{ r.status }})</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+{% if resident and resident.status == 'Pending' %}
+  <div class="banner warn">Your registration is waiting for the Society Manager's approval. You can book amenities once approved.</div>
+{% elif resident and resident.status == 'Rejected' %}
+  <div class="banner bad">Your registration was not approved by the Society Manager.</div>
+{% endif %}
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2>Book an amenity</h2>
+    {% if resident and resident.status == 'Approved' %}
+    <form method="post" action="/resident/request-booking">
+      <input type="hidden" name="resident_id" value="{{ resident.resident_id }}">
+      <div class="field"><label>Amenity</label>
+        <select name="amenity_id" required><option value="">Choose...</option>
+          {% for a in amenities %}<option value="{{ a.amenity_id }}">{{ a.name }} · {{ a.location }} (max {{ a.capacity }})</option>{% endfor %}
+        </select></div>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" name="booking_date" required></div>
+        <div class="field"><label>Time slot</label><input name="time_slot" placeholder="18:00-19:00" required></div>
+      </div>
+      <button class="btn block">Send booking request</button>
+    </form>
+    {% else %}<p class="muted">Booking opens after your residency is approved.</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Suggest a new amenity</h2>
+    <form method="post" action="/resident/propose-amenity">
+      <input type="hidden" name="resident_id" value="{{ resident.resident_id if resident else '' }}">
+      <div class="row">
+        <div class="field"><label>Name</label><input name="amenity_name" placeholder="e.g. Squash court" required></div>
+        <div class="field"><label>Type</label>
+          <select name="suggested_type"><option value="Sports_Court">Sports court</option><option value="Community_Hall">Community hall</option><option value="Gym">Fitness / gym</option><option value="Pool">Pool</option></select></div>
+      </div>
+      <div class="field"><label>Why would residents like it?</label><textarea name="reason" rows="2"></textarea></div>
+      <button class="btn block">Send to manager</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid cols-2" style="margin-top:1rem">
+  <div class="card">
+    <h2>My bookings ({{ my_bookings|length if my_bookings else 0 }})</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Amenity</th><th>Date</th><th>Slot</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for b in my_bookings %}<tr><td><strong>{{ b.amenity_name }}</strong></td><td>{{ b.booking_date }}</td><td>{{ b.time_slot }}</td><td>{{ pill(b.status) }}</td></tr>
+      {% else %}<tr><td class="empty" colspan="4">No bookings yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>My amenity suggestions</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Amenity</th><th>Type</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for p in my_proposals %}<tr><td><strong>{{ p.amenity_name }}</strong></td><td>{{ p.suggested_type|replace('_',' ') }}</td><td>{{ pill(p.status) }}</td></tr>
+      {% else %}<tr><td class="empty" colspan="3">Nothing suggested yet.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>My visits</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Amenity</th><th>In</th><th>Out</th></tr></thead>
+    <tbody>
+    {% for e in my_entries %}<tr><td><strong>{{ e.amenity_name }}</strong></td><td>{{ fmt(e.entry_time) }}</td>
+      <td>{% if e.exit_time %}{{ fmt(e.exit_time) }}{% else %}<span class="pill ok">Inside now</span>{% endif %}</td></tr>
+    {% else %}<tr><td class="empty" colspan="3">No visits recorded yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

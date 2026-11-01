@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SAMs{% endblock %} · Society Amenities Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+{% set role = session.get('role', 'manager') %}
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">S</span> SAMs</a>
+    <div class="nav-label">Portals</div>
+    <nav class="nav">
+      <a href="/manager" class="{{ 'active' if role == 'manager' }}">Manager</a>
+      <a href="/resident" class="{{ 'active' if role == 'resident' }}">Resident</a>
+      <a href="/staff" class="{{ 'active' if role == 'staff' }}">Staff</a>
+    </nav>
+    <div class="nav-label">New here?</div>
+    <nav class="nav"><a href="/register">Resident sign-up</a></nav>
+    <div class="sidebar-foot">
+      <span class="small muted">Viewing as <strong>{{ role|capitalize }}</strong></span>
+      <button class="btn ghost sm" id="theme-toggle" type="button">Dark mode</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-stack">
+        {% for category, msg in messages %}
+          <div class="flash {{ category }}"><span>{{ msg }}</span><button type="button" aria-label="Dismiss">&times;</button></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

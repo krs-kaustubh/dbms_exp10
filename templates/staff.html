@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pill, fmt, initials %}
+{% block title %}Staff{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div class="who">
+    <div class="avatar">{{ initials(staff.name if staff else None) }}</div>
+    <div>
+      <h1>{{ staff.name if staff else 'No staff selected' }}</h1>
+      {% if staff %}<p class="muted">{{ staff.staff_type|replace('_',' ') }} · {{ staff.amenity_name }} ({{ staff.location }}) · shift {{ staff.shift_timing }}</p>{% endif %}
+    </div>
+  </div>
+  <form method="post" action="/switch-role" class="inline">
+    <input type="hidden" name="role" value="staff">
+    <label for="who">Switch staff member (demo)</label>
+    <select id="who" name="staff_id" class="compact" data-autosubmit>
+      {% for s in all_staff %}<option value="{{ s.staff_id }}" {{ 'selected' if staff and s.staff_id == staff.staff_id }}>{{ s.name }} · {{ s.amenity_name }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+{% if staff %}
+<div class="grid" style="grid-template-columns: 1fr 2fr">
+  <div class="card">
+    <h2>Check a resident in</h2>
+    <p class="muted small">Records entry to {{ staff.amenity_name }} at the current time.</p>
+    <form method="post" action="/staff/checkin">
+      <input type="hidden" name="amenity_id" value="{{ staff.amenity_id }}">
+      <div class="field"><label>Resident</label>
+        <select name="resident_id" required><option value="">Choose...</option>
+          {% for r in approved_residents %}<option value="{{ r.resident_id }}">{{ r.name }} ({{ r.apartment_no }})</option>{% endfor %}
+        </select></div>
+      <button class="btn ok block">Log entry</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Inside {{ staff.amenity_name }} now ({{ active_entries|length if active_entries else 0 }})</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Resident</th><th>Apartment</th><th>Since</th><th></th></tr></thead>
+      <tbody>
+      {% for e in active_entries %}
+        <tr><td><strong>{{ e.resident_name }}</strong></td><td>{{ e.apartment_no }}</td><td>{{ fmt(e.entry_time) }}</td>
+          <td><div class="actions"><form class="inline" method="post" action="/staff/checkout">
+            <input type="hidden" name="resident_id" value="{{ e.resident_id }}">
+            <input type="hidden" name="entry_time" value="{{ e.entry_time }}">
+            <button class="btn bad sm">Log exit</button></form></div></td></tr>
+      {% else %}<tr><td class="empty" colspan="4">Nobody is checked in.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Bookings for {{ staff.amenity_name }}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Resident</th><th>Apartment</th><th>Contact</th><th>Date</th><th>Slot</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for b in assigned_bookings %}
+      <tr><td><strong>{{ b.resident_name }}</strong></td><td>{{ b.apartment_no }}</td><td>{{ b.contact_no }}</td><td>{{ b.booking_date }}</td><td>{{ b.time_slot }}</td><td>{{ pill(b.status) }}</td></tr>
+    {% else %}<tr><td class="empty" colspan="6">No bookings for this amenity.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endif %}
+{% endblock %}

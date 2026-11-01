@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Resident sign-up{% endblock %}
+
+{% block content %}
+<div class="narrow">
+  <div class="page-head"><div><h1>Resident sign-up</h1><p class="muted">Your request goes to the Society Manager for approval. An ID is assigned automatically.</p></div></div>
+  <div class="card">
+    <form method="post" action="/register">
+      <div class="field"><label>Full name</label><input name="name" required></div>
+      <div class="row">
+        <div class="field"><label>Apartment</label><input name="apartment_no" placeholder="C-404" required></div>
+        <div class="field"><label>Contact (10+ digits)</label><input name="contact_no" minlength="10" placeholder="9876543210" required></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" name="email" required></div>
+      <button class="btn block">Submit for approval</button>
+    </form>
+  </div>
+  <p class="small muted" style="text-align:center;margin-top:1rem"><a href="/manager">Back to dashboard</a></p>
+</div>
+{% endblock %}
